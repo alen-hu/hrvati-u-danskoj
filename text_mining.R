@@ -47,7 +47,6 @@ HuD_tbl <- HuD_tbl |>
 
 # Pregled
 HuD_tbl |> glimpse()
-cat("Učitano objava:", nrow(HuD_tbl), "\n")
 
 # ============================================================
 # 2. DETEKCIJA JEZIKA, ANALIZA I PRIJEVOD
@@ -66,7 +65,7 @@ HuD_tbl <- HuD_tbl |>
   )
 
 # Mapa ISO kodova → puna imena jezika
-jezici_imena <- c("hr" = "hrvatski i drugi\njužnoslavenski jezici", "en" = "engleski", "da" = "danski", "de" = "njemački", "sv" = "švedski", "no" = "norveški", "nl" = "nizozemski", "fr" = "francuski", "es" = "španjolski", "it" = "talijanski", "pl" = "poljski", "ro" = "rumunjski", "tr" = "turski", "sq" = "albanski", "hu" = "mađarski", "cs" = "češki", "sk" = "slovački", "is" = "islandski", "fi" = "finski")
+jezici_imena <- c("hr" = "hrvatski i drugi\njužnoslavenski\njezici", "en" = "engleski", "da" = "danski", "de" = "njemački", "sv" = "švedski", "no" = "norveški", "nl" = "nizozemski", "fr" = "francuski", "es" = "španjolski", "it" = "talijanski", "pl" = "poljski", "ro" = "rumunjski", "tr" = "turski", "sq" = "albanski", "hu" = "mađarski", "cs" = "češki", "sk" = "slovački", "is" = "islandski", "fi" = "finski")
 
 # Analiza distribucije jezika
 distribucija_jezika <- HuD_tbl |>
@@ -76,18 +75,15 @@ distribucija_jezika <- HuD_tbl |>
     jezik_ime = recode(jezik, !!!jezici_imena, .default = jezik)
   )
 
-distribucija_jezika
+distribucija_jezika |> arrange(desc(n))
 
 distribucija_jezika |>
   slice_max(n, n = 3) |>
   ggplot(aes(x = reorder(jezik_ime, n), y = n)) +
-  geom_col(fill = "steelblue") +
+  geom_col(fill = "darkgreen", alpha = 0.5) +
   geom_text(aes(label = paste0(n, " (", percent(udio, accuracy = 0.1), ")")), hjust = -0.1, size = 3.5) +
   coord_flip() +
-  labs(
-    title = "Distribucija objava po jeziku",
-    x = NULL, y = "Broj objava"
-  ) +
+  labs(title = "Distribucija objava po jeziku", x = NULL, y = "Broj objava") +
   theme_minimal() +
   expand_limits(y = max(distribucija_jezika$n[1:3]) * 1.2)
 
@@ -104,8 +100,6 @@ HuD_tbl <- HuD_tbl |>
   mutate(tekst_en = map2_chr(tekst, jezik, safe_google, .progress = TRUE)) |>
   drop_na(tekst_en) |>
   filter(nzchar(str_trim(tekst_en)))
-
-cat("Nakon prijevoda i filtriranja:", nrow(HuD_tbl), "objava\n")
 
 # ============================================================
 # 3. DULJINA OBJAVA
@@ -128,28 +122,23 @@ duljina_summary <- HuD_tbl |>
     prosj_rijeci = round(mean(duljina_rijeci), 1),
     medijan_rijeci = median(duljina_rijeci),
     prosj_recenica = round(mean(duljina_recenica), 1)
-  )
-
-duljina_summary
+  ) |> print()
 
 # Histogram distribucije
 ggplot(HuD_tbl, aes(x = duljina_rijeci)) +
-  geom_histogram(bins = 30, fill = "steelblue", color = "white") +
+  geom_histogram(bins = 30, fill = "darkgreen", alpha = 0.5) +
   geom_vline(aes(xintercept = mean(duljina_rijeci)), color = "red", linetype = "dashed", linewidth = 1) +
-  geom_vline(aes(xintercept = median(duljina_rijeci)), color = "darkgreen", linetype = "dashed", linewidth = 1) +
+  geom_vline(aes(xintercept = median(duljina_rijeci)), color = "blue", linetype = "dashed", linewidth = 1) +
   annotate("text", x = mean(HuD_tbl$duljina_rijeci) + 5, y = 50, label = paste("Prosjek:", round(mean(HuD_tbl$duljina_rijeci), 1)), color = "red", hjust = 0) +
-  annotate("text", x = median(HuD_tbl$duljina_rijeci) + 5, y = 40, label = paste("Medijan:", median(HuD_tbl$duljina_rijeci)), color = "darkgreen", hjust = 0) +
-  labs(
-    title = "Distribucija duljine objava",
-    x = "Broj riječi", y = "Broj objava"
-  ) +
+  annotate("text", x = median(HuD_tbl$duljina_rijeci) + 5, y = 40, label = paste("Medijan:", median(HuD_tbl$duljina_rijeci)), color = "blue", hjust = 0) +
+  labs(title = "Distribucija duljine objava", x = "Broj riječi", y = "Broj objava") +
   theme_minimal()
 
 # ============================================================
 # 4. NAJČEŠĆE RIJEČI (UKUPNO) I BIGRAMI
 # ============================================================
 
-# Custom stop riječi za ovu domenu
+# Stop riječi za ovu domenu
 custom_stop <- tibble(word = c("hello", "everyone", "team", "anyone", "good", "afternoon", "evening", "thanks", "please", "greetings", "wondering", "question", "lp", "pozz", "hi", "dear", "people", "lot", "thank", "morning", "day", "feel", "free", "https", "http", "www"))
 
 # Tokenizacija
@@ -161,19 +150,13 @@ sve_rijeci <- HuD_tbl |>
   filter(str_length(word) > 2, !str_detect(word, "^\\d+$"))
 
 # Top 30 najčešćih riječi
-top_rijeci_ukupno <- sve_rijeci |>
-  count(word, sort = TRUE) |>
-  head(30)
-
+top_rijeci_ukupno <- sve_rijeci |> count(word, sort = TRUE) |> head(20)
 top_rijeci_ukupno
 
 ggplot(top_rijeci_ukupno, aes(x = reorder(word, n), y = n)) +
-  geom_col(fill = "steelblue") +
+  geom_col(fill = "darkgreen", alpha = 0.5) +
   coord_flip() +
-  labs(
-    title = "30 najčešćih riječi u objavama",
-    x = NULL, y = "Frekvencija"
-  ) +
+  labs(title = "20 najčešćih riječi u objavama", x = NULL, y = "Frekvencija") +
   theme_minimal()
 
 # ============================================================
@@ -190,15 +173,11 @@ HuD_tbl <- HuD_tbl |>
 objave_po_mjesecu <- HuD_tbl |> count(mjesec)
 
 ggplot(objave_po_mjesecu, aes(x = mjesec, y = n)) +
-  geom_line(linewidth = 1, color = "steelblue") +
-  geom_point(size = 3, color = "steelblue") +
+  geom_line(linewidth = 1, color = "darkgreen") +
+  geom_point(size = 3, color = "darkgreen") +
   geom_text(aes(label = n), vjust = -1, size = 3.5) +
   scale_x_date(date_labels = "%b %Y", date_breaks = "1 month") +
-  labs(
-    title = "Količina objava po mjesecima",
-    subtitle = paste("Ukupno", nrow(HuD_tbl), "objava"),
-    x = NULL, y = "Broj objava"
-  ) +
+  labs(title = "Količina objava po mjesecima", subtitle = paste("Ukupno", nrow(HuD_tbl), "objava"), x = NULL, y = "Broj objava") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   expand_limits(y = max(objave_po_mjesecu$n) * 1.15)
@@ -221,14 +200,14 @@ HuD_tbl |>
 
 topic_dict <- list(
   stanovanje = c("apartment", "room for rent", "rent out", "renting", "accommodation", "flat", "studio", "roommate", "landlord", "looking for a room", "looking for apartment"),
-  transport_putovanja = c("traveling", "travel from", "travel to", "drive from", "drive to", "driving from", "driving to", "truck", "van", "transport", "flight", "airport", "package", "luggage", "carrier", "shipment", "ride to", "going to croatia", "going to denmark"),
+  transport_putovanja = c("traveling", "travel from", "travel to", "drive from", "drive to", "driving from", "driving to", "truck", "van", "transport", "flight", "airport", "plain", "package", "luggage", "carrier", "shipment", "ride to", "going to croatia", "going to denmark"),
   posao = c("looking for a job", "job offer", "we are hiring", "we are looking for", "job advertisement", "salary", "hiring", "employee", "employer", "looking for workers", "experienced", "recruitment", "vacancy", "part-time job", "student job", "full time", "applicant"),
   hrana_prodaja = c("cake", "cakes", "burek", "pastry", "donuts", "for sale", "fresh", "balkan food", "selling", "homemade", "bakery"),
   zdravstvo = c("doctor", "medical", "hospital", "nurse", "physiotherapist", "medicine", "psychologist", "neuropsychologist", "dentist", "health system", "infertility"),
   birokracija = c("cpr", "tax", "skat", "passport", "embassy", "registration", "documents", "visa", "license", "certificate", "papers", "letter of guarantee", "diploma certification"),
-  obrtnici_usluge = c("mechanic", "plumber", "electrician", "hairdresser", "lawyer", "carpenter", "service", "repair", "installer", "interpreter", "notary", "accountant", "graphic design", "water installer", "auto service", "bookkeeping"),
+  obrtnici_usluge = c("mechanic", "plumber", "electrician", "hairdresser", "lawyer", "store", "carpenter", "service", "repair", "installer", "interpreter", "notary", "accountant", "graphic design", "water installer", "auto service", "bookkeeping"),
   vjera_zajednica = c("mass", "church", "christmas", "easter", "priest", "holy mass", "midnight mass"),
-  sport_zabava = c("tickets", "concert", "handball", "water polo", "dinamo", "match", "game in malmo", "european championship", "celebration", "valentine"),
+  sport_zabava = c("tickets", "concert", "handball", "water polo", "dinamo", "match", "game in malmo", "bronze", "gold", "silver", "european championship", "celebration", "valentine"),
   jezik_obrazovanje = c("danish course", "danish language", "language course", "study", "studies", "university", "students", "studying", "school", "education", "bachelor", "masters", "phd", "erasmus"),
   drustvo_upoznavanje = c("meet someone", "meet up", "looking to meet", "single mom", "single father", "drop a message", "lonely", "anonymous", "čakula", "hang out", "drinks and", "go out for"),
   tv_internet = c("iptv", "tv channels", "telemach", "eontv", "norlys", "internet", "watch our", "streaming"),
@@ -245,25 +224,19 @@ classify_text <- function(text, dict = topic_dict) {
   names(scores)[which.max(scores)]
 }
 
-HuD_tbl <- HuD_tbl |>
-  mutate(tema = map_chr(tekst_en, classify_text))
+HuD_tbl <- HuD_tbl |> mutate(tema = map_chr(tekst_en, classify_text))
 
 # Distribucija po temama
 tema_summary <- HuD_tbl |>
   count(tema, sort = TRUE) |>
   mutate(udio = n / sum(n))
-
 tema_summary
 
 ggplot(tema_summary, aes(x = reorder(tema, n), y = n)) +
-  geom_col(fill = "steelblue") +
+  geom_col(fill = "darkgreen", alpha = 0.5) +
   geom_text(aes(label = paste0(n, " (", percent(udio, accuracy = 0.1), ")")), hjust = -0.1, size = 3.5) +
   coord_flip() +
-  labs(
-    title = "Distribucija objava po temama",
-    subtitle = paste("Ukupno", nrow(HuD_tbl), "objava"),
-    x = NULL, y = "Broj objava"
-  ) +
+  labs(title = "Distribucija objava po temama", subtitle = paste("Ukupno", nrow(HuD_tbl), "objava"), x = NULL, y = "Broj objava") +
   theme_minimal() +
   expand_limits(y = max(tema_summary$n) * 1.2)
 
@@ -286,10 +259,7 @@ ggplot(top_rijeci_po_temi, aes(x = reorder_within(word, n, tema), y = n, fill = 
   facet_wrap(~tema, scales = "free", ncol = 3) +
   scale_x_reordered() +
   coord_flip() +
-  labs(
-    title = "Najčešće riječi po temama",
-    x = NULL, y = "Frekvencija"
-  ) +
+  labs(title = "Najčešće riječi po temama", x = NULL, y = "Frekvencija") +
   theme_minimal() +
   theme(strip.text = element_text(face = "bold"))
 
@@ -312,13 +282,10 @@ tema_kroz_vrijeme <- HuD_tbl |> count(mjesec, tema)
 
 ggplot(tema_kroz_vrijeme, aes(x = mjesec, y = tema, fill = n)) +
   geom_tile(color = "white") +
-  scale_fill_gradient(low = "white", high = "darkblue", name = "Objave") +
+  scale_fill_gradient(low = "white", high = "darkgreen", name = "Objave") +
   scale_x_date(date_labels = "%b %Y", date_breaks = "1 month") +
-  labs(
-    title = "Intenzitet objava po temama kroz vrijeme",
-    x = NULL, y = NULL
-  ) +
-  theme_minimal() +
+  labs(title = "Intenzitet objava po temama kroz vrijeme", x = NULL, y = NULL) +
+  theme_classic() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 # ============================================================
@@ -329,14 +296,12 @@ ggplot(tema_kroz_vrijeme, aes(x = mjesec, y = tema, fill = n)) +
 top_lajkani <- HuD_tbl |>
   slice_max(svidanja, n = 10) |>
   select(objava, tema, svidanja, komentari, tekst_en)
-
 top_lajkani
 
 # Top 10 najkomentiranijih
 top_komentirani <- HuD_tbl |>
   slice_max(komentari, n = 10) |>
   select(objava, tema, svidanja, komentari, tekst_en)
-
 top_komentirani
 
 # Angažman po temama
@@ -353,7 +318,6 @@ angazman_tema <- HuD_tbl |>
     .groups = "drop"
   ) |>
   arrange(desc(prosj_komentari))
-
 angazman_tema
 
 # Vizualizacija angažmana
@@ -363,10 +327,7 @@ angazman_tema |>
   ggplot(aes(x = reorder(tema, vrijednost), y = vrijednost, fill = metrika)) +
   geom_col(position = "dodge") +
   coord_flip() +
-  labs(
-    title = "Angažman po temama",
-    x = NULL, y = "Prosječna vrijednost", fill = NULL
-  ) +
+  labs(title = "Angažman po temama", x = NULL, y = "Prosječna vrijednost", fill = NULL) +
   theme_minimal()
 
 # ============================================================
@@ -387,7 +348,6 @@ classify_type <- function(text) {
 }
 
 HuD_tbl <- HuD_tbl |> mutate(tip = map_chr(tekst_en, classify_type))
-
 HuD_tbl |> count(tip)
 
 # ============================================================
@@ -428,18 +388,13 @@ sentiment_tema <- HuD_tbl |>
     .groups = "drop"
   ) |>
   arrange(desc(prosj_sentiment))
-
 sentiment_tema
 
 ggplot(sentiment_tema, aes(x = reorder(tema, prosj_sentiment), y = prosj_sentiment, fill = prosj_sentiment > 0)) +
   geom_col() +
   scale_fill_manual(values = c("TRUE" = "darkgreen", "FALSE" = "darkred"), guide = "none") +
   coord_flip() +
-  labs(
-    title = "Prosječni sentiment po temama",
-    subtitle = "Pozitivne vrijednosti = više pozitivnih nego negativnih riječi",
-    x = NULL, y = "Sentiment score (pozitivne − negativne riječi)"
-  ) +
+  labs(title = "Prosječni sentiment po temama", subtitle = "Pozitivne vrijednosti = više pozitivnih nego negativnih riječi", x = NULL, y = "Sentiment score (pozitivne − negativne riječi)") +
   theme_minimal()
 
 # ============================================================
@@ -456,11 +411,10 @@ ttr_po_temi <- sve_rijeci_tema |>
     .groups = "drop"
   ) |>
   arrange(desc(ttr))
-
 ttr_po_temi
 
 ggplot(ttr_po_temi, aes(x = reorder(tema, ttr), y = ttr)) +
-  geom_col(fill = "purple") +
+  geom_col(fill = "darkgreen", alpha = 0.5) +
   geom_text(aes(label = ttr), hjust = -0.1, size = 3.5) +
   coord_flip() +
   labs(
@@ -486,20 +440,15 @@ HuD_tbl <- HuD_tbl |>
 # ============================================================
 
 # Distribucija tipova
-tip_summary <- HuD_tbl |>
-  count(tip, sort = TRUE) |>
-  mutate(udio = n / sum(n))
+tip_summary <- HuD_tbl |> count(tip, sort = TRUE) |> mutate(udio = n / sum(n))
 
 tip_summary
 
 ggplot(tip_summary, aes(x = reorder(tip, n), y = n)) +
-  geom_col(fill = "steelblue") +
+  geom_col(fill = "darkgreen", alpha = 0.5) +
   geom_text(aes(label = paste0(n, " (", percent(udio, accuracy = 0.1), ")")), hjust = -0.1, size = 3.5) +
   coord_flip() +
-  labs(
-    title = "Distribucija tipova objava",
-    x = NULL, y = "Broj objava"
-  ) +
+  labs(title = "Distribucija tipova objava", x = NULL, y = "Broj objava") +
   theme_minimal() +
   expand_limits(y = max(tip_summary$n) * 1.2)
 
@@ -514,10 +463,7 @@ ggplot(tip_tema, aes(x = tema, y = udio, fill = tip)) +
   geom_col(position = "fill") +
   scale_y_continuous(labels = percent_format()) +
   coord_flip() +
-  labs(
-    title = "Struktura tipova objava unutar svake teme",
-    x = NULL, y = "Udio", fill = "Tip"
-  ) +
+  labs(title = "Struktura tipova objava unutar svake teme", x = NULL, y = "Udio", fill = "Tip") +
   theme_minimal()
 
 # Omjer pitanja prema ponudama po temi
