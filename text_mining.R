@@ -227,9 +227,7 @@ classify_text <- function(text, dict = topic_dict) {
 HuD_tbl <- HuD_tbl |> mutate(tema = map_chr(tekst_en, classify_text))
 
 # Distribucija po temama
-tema_summary <- HuD_tbl |>
-  count(tema, sort = TRUE) |>
-  mutate(udio = n / sum(n))
+tema_summary <- HuD_tbl |> count(tema, sort = TRUE) |> mutate(udio = n / sum(n))
 tema_summary
 
 ggplot(tema_summary, aes(x = reorder(tema, n), y = n)) +
@@ -417,11 +415,7 @@ ggplot(ttr_po_temi, aes(x = reorder(tema, ttr), y = ttr)) +
   geom_col(fill = "darkgreen", alpha = 0.5) +
   geom_text(aes(label = ttr), hjust = -0.1, size = 3.5) +
   coord_flip() +
-  labs(
-    title = "Leksička raznolikost po temama (TTR)",
-    subtitle = "Viša vrijednost = raznovrsniji vokabular",
-    x = NULL, y = "Type-Token Ratio"
-  ) +
+  labs(title = "Leksička raznolikost po temama (TTR)", subtitle = "Viša vrijednost = raznovrsniji vokabular", x = NULL, y = "Type-Token Ratio") +
   theme_minimal() +
   expand_limits(y = max(ttr_po_temi$ttr) * 1.15)
 
@@ -441,7 +435,6 @@ HuD_tbl <- HuD_tbl |>
 
 # Distribucija tipova
 tip_summary <- HuD_tbl |> count(tip, sort = TRUE) |> mutate(udio = n / sum(n))
-
 tip_summary
 
 ggplot(tip_summary, aes(x = reorder(tip, n), y = n)) +
@@ -473,7 +466,6 @@ omjer_potreba_ponuda <- HuD_tbl |>
   pivot_wider(names_from = tip, values_from = n, values_fill = 0) |>
   mutate(omjer_potreba_ponuda = round(pitanje_potreba / pmax(ponuda_oglas, 1), 2)) |>
   arrange(desc(omjer_potreba_ponuda))
-
 omjer_potreba_ponuda
 
 # ============================================================
